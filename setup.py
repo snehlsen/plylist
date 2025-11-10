@@ -40,6 +40,14 @@ setup(
             "flake8>=6.0.0",
             "mypy>=1.0.0",
         ],
+        "apple-music": [
+            "PyJWT>=2.8.0",
+            "cryptography>=41.0.0",
+        ],
+        "all": [
+            "PyJWT>=2.8.0",
+            "cryptography>=41.0.0",
+        ],
     },
     entry_points={
         "console_scripts": [
