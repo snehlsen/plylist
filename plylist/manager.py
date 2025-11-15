@@ -113,7 +113,7 @@ class PlaylistManager:
             True if successful, False otherwise
         """
         playlist = self.get_playlist(playlist_id)
-        if not playlist:
+        if playlist is None:
             return False
 
         playlist.add_track(track)
@@ -131,7 +131,7 @@ class PlaylistManager:
             True if successful, False otherwise
         """
         playlist = self.get_playlist(playlist_id)
-        if not playlist:
+        if playlist is None:
             return False
 
         if playlist.remove_track(track_id):
@@ -151,7 +151,7 @@ class PlaylistManager:
             True if successful, False otherwise
         """
         playlist = self.get_playlist(playlist_id)
-        if not playlist:
+        if playlist is None:
             return False
 
         if playlist.move_track(from_index, to_index):
@@ -170,7 +170,7 @@ class PlaylistManager:
             True if successful, False otherwise
         """
         playlist = self.get_playlist(playlist_id)
-        if not playlist:
+        if playlist is None:
             return False
 
         playlist.name = new_name
@@ -188,7 +188,7 @@ class PlaylistManager:
             True if successful, False otherwise
         """
         playlist = self.get_playlist(playlist_id)
-        if not playlist:
+        if playlist is None:
             return False
 
         for tag in tags:
@@ -235,7 +235,7 @@ class PlaylistManager:
             True if successful, False otherwise
         """
         playlist = self.get_playlist(playlist_id)
-        if not playlist:
+        if playlist is None:
             return False
 
         platform = self.platforms.get(platform_name)
@@ -265,7 +265,7 @@ class PlaylistManager:
             return None
 
         playlist = platform.sync_playlist_from_platform(platform_playlist_id)
-        if playlist:
+        if playlist is not None:
             self.storage.save(playlist)
             return playlist
         return None
@@ -282,7 +282,7 @@ class PlaylistManager:
             New Playlist if successful, None otherwise
         """
         original = self.get_playlist(playlist_id)
-        if not original:
+        if original is None:
             return None
 
         # Create a new playlist with duplicated data
@@ -314,7 +314,7 @@ class PlaylistManager:
 
         for pid in playlist_ids:
             playlist = self.get_playlist(pid)
-            if not playlist:
+            if playlist is None:
                 continue
 
             for track in playlist.tracks:

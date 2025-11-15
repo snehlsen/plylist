@@ -79,7 +79,7 @@ def cmd_list(args, manager: PlaylistManager) -> int:
 def cmd_show(args, manager: PlaylistManager) -> int:
     """Show playlist details"""
     playlist = manager.get_playlist(args.playlist_id)
-    if not playlist:
+    if playlist is None:
         print(f"Playlist not found: {args.playlist_id}")
         return 1
 
@@ -97,7 +97,7 @@ def cmd_delete(args, manager: PlaylistManager) -> int:
     """Delete a playlist"""
     if not args.force:
         playlist = manager.get_playlist(args.playlist_id)
-        if playlist:
+        if playlist is not None:
             confirm = input(f"Delete playlist '{playlist.name}'? (y/N): ")
             if confirm.lower() != 'y':
                 print("Cancelled.")
@@ -114,7 +114,7 @@ def cmd_delete(args, manager: PlaylistManager) -> int:
 def cmd_add_track(args, manager: PlaylistManager) -> int:
     """Add a track to a playlist"""
     playlist = manager.get_playlist(args.playlist_id)
-    if not playlist:
+    if playlist is None:
         print(f"Playlist not found: {args.playlist_id}")
         return 1
 
@@ -181,7 +181,7 @@ def cmd_export(args, manager: PlaylistManager) -> int:
 def cmd_import(args, manager: PlaylistManager) -> int:
     """Import a playlist"""
     playlist = manager.import_playlist(args.input, args.format)
-    if playlist:
+    if playlist is not None:
         print(f"Imported playlist: {playlist.name}")
         print(f"Playlist ID: {playlist.playlist_id}")
         print(f"Tracks: {len(playlist.tracks)}")

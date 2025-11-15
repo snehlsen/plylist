@@ -184,6 +184,6 @@ class PlatformBase(ABC):
             Playlist object if successful, None otherwise
         """
         playlist = self.get_playlist(platform_id)
-        if playlist:
+        if playlist is not None:
             playlist.add_platform_id(self.platform_name, platform_id)
         return playlist
