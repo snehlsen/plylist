@@ -15,6 +15,22 @@ Plylist is a Python application for managing music playlists independent of any 
 
 ## Installation
 
+### Using uv (recommended)
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd plylist
+
+# Install the package
+uv pip install -e .
+
+# Or install with development dependencies
+uv pip install -e ".[dev]"
+```
+
+### Using pip (alternative)
+
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -231,7 +247,12 @@ plylist/
 ### Running Tests
 
 ```bash
+# With uv
+uv pip install -e ".[dev]"
 pytest tests/
+
+# Or use uv run (if you have a uv project set up)
+uv run pytest tests/
 ```
 
 ## Use Cases
