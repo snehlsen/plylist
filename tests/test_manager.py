@@ -3,7 +3,6 @@
 import pytest
 import tempfile
 import shutil
-from pathlib import Path
 from plylist.manager import PlaylistManager
 from plylist.storage.json_storage import JSONStorage
 from plylist.models.track import Track
@@ -86,7 +85,9 @@ class TestPlaylistManager:
         """Test listing playlists filtered by tags"""
         manager.create_playlist(name="Playlist 1", tags=["workout"])
         manager.create_playlist(name="Playlist 2", tags=["chill"])
-        manager.create_playlist(name="Playlist 3", tags=["workout", "energetic"])
+        manager.create_playlist(
+            name="Playlist 3", tags=["workout", "energetic"]
+        )
 
         playlists = manager.list_playlists(tags=["workout"])
         assert len(playlists) == 2
@@ -110,7 +111,9 @@ class TestPlaylistManager:
         track = Track(title="Song", artist="Artist")
         manager.add_track_to_playlist(playlist.playlist_id, track)
 
-        result = manager.remove_track_from_playlist(playlist.playlist_id, track.track_id)
+        result = manager.remove_track_from_playlist(
+            playlist.playlist_id, track.track_id
+        )
         assert result is True
 
         # Verify track was removed

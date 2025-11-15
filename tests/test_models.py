@@ -70,7 +70,9 @@ class TestTrack:
     def test_track_matches_with_isrc(self):
         """Test track matching using ISRC"""
         track1 = Track(title="Song", artist="Artist", isrc="US123")
-        track2 = Track(title="Different Title", artist="Different Artist", isrc="US123")
+        track2 = Track(
+            title="Different Title", artist="Different Artist", isrc="US123"
+        )
         track3 = Track(title="Song", artist="Artist", isrc="US456")
 
         # Same ISRC should match even with different title/artist

@@ -34,7 +34,9 @@ class PlaylistManager:
         """
         self.platforms[platform.platform_name] = platform
 
-    def create_playlist(self, name: str, description: str = None, tags: List[str] = None) -> Playlist:
+    def create_playlist(
+        self, name: str, description: str = None, tags: List[str] = None
+    ) -> Playlist:
         """
         Create a new playlist
 
@@ -46,7 +48,9 @@ class PlaylistManager:
         Returns:
             Created Playlist object
         """
-        playlist = Playlist(name=name, description=description, tags=tags or [])
+        playlist = Playlist(
+            name=name, description=description, tags=tags or []
+        )
         self.storage.save(playlist)
         return playlist
 
@@ -86,7 +90,9 @@ class PlaylistManager:
         """
         return self.storage.delete(playlist_id)
 
-    def list_playlists(self, query: str = None, tags: List[str] = None) -> List[Dict[str, Any]]:
+    def list_playlists(
+        self, query: str = None, tags: List[str] = None
+    ) -> List[Dict[str, Any]]:
         """
         List all playlists, optionally filtered
 
@@ -119,7 +125,9 @@ class PlaylistManager:
         playlist.add_track(track)
         return self.update_playlist(playlist)
 
-    def remove_track_from_playlist(self, playlist_id: str, track_id: str) -> bool:
+    def remove_track_from_playlist(
+        self, playlist_id: str, track_id: str
+    ) -> bool:
         """
         Remove a track from a playlist
 
@@ -138,7 +146,9 @@ class PlaylistManager:
             return self.update_playlist(playlist)
         return False
 
-    def move_track(self, playlist_id: str, from_index: int, to_index: int) -> bool:
+    def move_track(
+        self, playlist_id: str, from_index: int, to_index: int
+    ) -> bool:
         """
         Move a track within a playlist
 
@@ -196,7 +206,9 @@ class PlaylistManager:
 
         return self.update_playlist(playlist)
 
-    def export_playlist(self, playlist_id: str, export_path: str, format: str = "json") -> bool:
+    def export_playlist(
+        self, playlist_id: str, export_path: str, format: str = "json"
+    ) -> bool:
         """
         Export a playlist to a file
 
@@ -208,9 +220,13 @@ class PlaylistManager:
         Returns:
             True if successful, False otherwise
         """
-        return self.storage.export_playlist(playlist_id, export_path, format)
+        return self.storage.export_playlist(
+            playlist_id, export_path, format
+        )
 
-    def import_playlist(self, import_path: str, format: str = "json") -> Optional[Playlist]:
+    def import_playlist(
+        self, import_path: str, format: str = "json"
+    ) -> Optional[Playlist]:
         """
         Import a playlist from a file
 
@@ -248,7 +264,9 @@ class PlaylistManager:
             return self.update_playlist(playlist)
         return False
 
-    def sync_from_platform(self, platform_name: str, platform_playlist_id: str) -> Optional[Playlist]:
+    def sync_from_platform(
+        self, platform_name: str, platform_playlist_id: str
+    ) -> Optional[Playlist]:
         """
         Sync a playlist from a streaming platform
 
@@ -264,13 +282,17 @@ class PlaylistManager:
             print(f"Platform '{platform_name}' not registered")
             return None
 
-        playlist = platform.sync_playlist_from_platform(platform_playlist_id)
+        playlist = platform.sync_playlist_from_platform(
+            platform_playlist_id
+        )
         if playlist is not None:
             self.storage.save(playlist)
             return playlist
         return None
 
-    def duplicate_playlist(self, playlist_id: str, new_name: str = None) -> Optional[Playlist]:
+    def duplicate_playlist(
+        self, playlist_id: str, new_name: str = None
+    ) -> Optional[Playlist]:
         """
         Create a duplicate of a playlist
 
@@ -289,7 +311,9 @@ class PlaylistManager:
         duplicate = Playlist(
             name=new_name or f"Copy of {original.name}",
             description=original.description,
-            tracks=[Track.from_dict(t.to_dict()) for t in original.tracks],
+            tracks=[
+                Track.from_dict(t.to_dict()) for t in original.tracks
+            ],
             tags=original.tags.copy(),
         )
 
@@ -297,7 +321,12 @@ class PlaylistManager:
             return duplicate
         return None
 
-    def merge_playlists(self, playlist_ids: List[str], new_name: str, remove_duplicates: bool = True) -> Optional[Playlist]:
+    def merge_playlists(
+        self,
+        playlist_ids: List[str],
+        new_name: str,
+        remove_duplicates: bool = True,
+    ) -> Optional[Playlist]:
         """
         Merge multiple playlists into a new playlist
 
@@ -320,7 +349,9 @@ class PlaylistManager:
             for track in playlist.tracks:
                 if remove_duplicates:
                     # Create a simple hash for duplicate detection
-                    track_hash = f"{track.title.lower()}|{track.artist.lower()}"
+                    track_hash = (
+                        f"{track.title.lower()}|{track.artist.lower()}"
+                    )
                     if track_hash in seen_tracks:
                         continue
                     seen_tracks.add(track_hash)

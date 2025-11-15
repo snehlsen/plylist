@@ -144,7 +144,9 @@ class JSONStorage:
             {"playlist_id": pid, **info} for pid, info in index.items()
         ]
 
-    def search(self, query: str = None, tags: List[str] = None) -> List[Dict[str, Any]]:
+    def search(
+        self, query: str = None, tags: List[str] = None
+    ) -> List[Dict[str, Any]]:
         """
         Search for playlists
 
@@ -172,7 +174,9 @@ class JSONStorage:
 
         return all_playlists
 
-    def export_playlist(self, playlist_id: str, export_path: str, format: str = "json") -> bool:
+    def export_playlist(
+        self, playlist_id: str, export_path: str, format: str = "json"
+    ) -> bool:
         """
         Export a playlist to a file
 
@@ -191,12 +195,21 @@ class JSONStorage:
         try:
             if format == "json":
                 with open(export_path, "w", encoding="utf-8") as f:
-                    json.dump(playlist.to_dict(), f, indent=2, ensure_ascii=False)
+                    json.dump(
+                        playlist.to_dict(), f, indent=2, ensure_ascii=False
+                    )
             elif format == "csv":
                 import csv
                 with open(export_path, "w", newline="", encoding="utf-8") as f:
                     writer = csv.writer(f)
-                    writer.writerow(["Title", "Artist", "Album", "Duration (ms)", "ISRC", "Additional Artists"])
+                    writer.writerow([
+                        "Title",
+                        "Artist",
+                        "Album",
+                        "Duration (ms)",
+                        "ISRC",
+                        "Additional Artists",
+                    ])
                     for track in playlist.tracks:
                         writer.writerow([
                             track.title,
@@ -214,7 +227,9 @@ class JSONStorage:
             print(f"Error exporting playlist: {e}")
             return False
 
-    def import_playlist(self, import_path: str, format: str = "json") -> Optional[Playlist]:
+    def import_playlist(
+        self, import_path: str, format: str = "json"
+    ) -> Optional[Playlist]:
         """
         Import a playlist from a file
 
@@ -244,9 +259,17 @@ class JSONStorage:
                             title=row["Title"],
                             artist=row["Artist"],
                             album=row.get("Album") or None,
-                            duration_ms=int(row["Duration (ms)"]) if row.get("Duration (ms)") else None,
+                            duration_ms=(
+                                int(row["Duration (ms)"])
+                                if row.get("Duration (ms)")
+                                else None
+                            ),
                             isrc=row.get("ISRC") or None,
-                            additional_artists=row.get("Additional Artists", "").split(", ") if row.get("Additional Artists") else [],
+                            additional_artists=(
+                                row.get("Additional Artists", "").split(", ")
+                                if row.get("Additional Artists")
+                                else []
+                            ),
                         )
                         tracks.append(track)
 
