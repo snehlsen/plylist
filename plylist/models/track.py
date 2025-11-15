@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field, asdict
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 
@@ -33,7 +33,7 @@ class Track:
     platform_ids: Dict[str, str] = field(default_factory=dict)
     track_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     added_at: str = field(
-        default_factory=lambda: datetime.utcnow().isoformat()
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
     additional_artists: list[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)

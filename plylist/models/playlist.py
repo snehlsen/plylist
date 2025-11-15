@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field, asdict
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from .track import Track
@@ -31,10 +31,10 @@ class Playlist:
     tracks: List[Track] = field(default_factory=list)
     playlist_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     created_at: str = field(
-        default_factory=lambda: datetime.utcnow().isoformat()
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
     updated_at: str = field(
-        default_factory=lambda: datetime.utcnow().isoformat()
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
     platform_ids: Dict[str, str] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -136,7 +136,7 @@ class Playlist:
 
     def _update_timestamp(self) -> None:
         """Update the updated_at timestamp"""
-        self.updated_at = datetime.utcnow().isoformat()
+        self.updated_at = datetime.now(timezone.utc).isoformat()
 
     def add_platform_id(self, platform: str, platform_id: str) -> None:
         """
