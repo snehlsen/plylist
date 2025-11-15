@@ -185,7 +185,7 @@ class JSONStorage:
             True if successful, False otherwise
         """
         playlist = self.load(playlist_id)
-        if not playlist:
+        if playlist is None:
             return False
 
         try:
