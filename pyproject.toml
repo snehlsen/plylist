@@ -48,6 +48,14 @@ dev = [
     "sphinx>=6.0.0",
     "sphinx-rtd-theme>=1.2.0",
 ]
+apple-music = [
+    "PyJWT>=2.8.0",
+    "cryptography>=41.0.0",
+]
+all = [
+    "PyJWT>=2.8.0",
+    "cryptography>=41.0.0",
+]
 
 [project.scripts]
 plylist = "plylist.cli.main:main"

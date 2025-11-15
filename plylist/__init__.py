@@ -11,5 +11,6 @@ __author__ = "Plylist Contributors"
 from .models.track import Track
 from .models.playlist import Playlist
 from .manager import PlaylistManager
+from .platforms.apple_music import AppleMusicPlatform
 
-__all__ = ["Track", "Playlist", "PlaylistManager"]
+__all__ = ["Track", "Playlist", "PlaylistManager", "AppleMusicPlatform"]
