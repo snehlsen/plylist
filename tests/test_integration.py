@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import json
 from pathlib import Path
-from plylist import PlaylistManager, Track, Playlist
+from plylist import PlaylistManager, Track
 from plylist.storage.json_storage import JSONStorage
 
 
@@ -145,20 +145,26 @@ class TestIntegrationAPI:
         assert len(retrieved.tracks) == 0
 
         # Rename empty playlist should work
-        result = manager.rename_playlist(empty_playlist.playlist_id, "Renamed Empty")
+        result = manager.rename_playlist(
+            empty_playlist.playlist_id, "Renamed Empty"
+        )
         assert result is True
         renamed = manager.get_playlist(empty_playlist.playlist_id)
         assert renamed.name == "Renamed Empty"
 
         # Add tags to empty playlist should work
-        result = manager.add_tags_to_playlist(empty_playlist.playlist_id, ["tag1", "tag2"])
+        result = manager.add_tags_to_playlist(
+            empty_playlist.playlist_id, ["tag1", "tag2"]
+        )
         assert result is True
         tagged = manager.get_playlist(empty_playlist.playlist_id)
         assert "tag1" in tagged.tags
         assert "tag2" in tagged.tags
 
         # Duplicate empty playlist should work
-        duplicate = manager.duplicate_playlist(empty_playlist.playlist_id, "Duplicate")
+        duplicate = manager.duplicate_playlist(
+            empty_playlist.playlist_id, "Duplicate"
+        )
         assert duplicate is not None
         assert duplicate.name == "Duplicate"
         assert len(duplicate.tracks) == 0
@@ -198,7 +204,9 @@ class TestIntegrationCLI:
         run_cli = cli_setup
 
         # Create playlist
-        result = run_cli("create", "Test Playlist", "-d", "Testing", "-t", "test,cli")
+        result = run_cli(
+            "create", "Test Playlist", "-d", "Testing", "-t", "test,cli"
+        )
         assert result.returncode == 0, f"Create failed: {result.stderr}"
         assert "Created playlist" in result.stdout
 
@@ -284,6 +292,8 @@ class TestIntegrationCLI:
 
         # Show should work for empty playlist
         result = run_cli("show", playlist_id)
-        assert result.returncode == 0, "Show command should work for empty playlist"
+        assert (
+            result.returncode == 0
+        ), "Show command should work for empty playlist"
         assert "Empty Playlist" in result.stdout
         assert "Tracks: 0" in result.stdout
