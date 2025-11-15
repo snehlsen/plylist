@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field, asdict
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from .track import Track
@@ -20,7 +20,8 @@ class Playlist:
         playlist_id: Unique identifier for this playlist
         created_at: Timestamp when playlist was created
         updated_at: Timestamp when playlist was last updated
-        platform_ids: Dictionary mapping platform names to platform-specific IDs
+        platform_ids: Dictionary mapping platform names to
+            platform-specific IDs
         metadata: Additional platform-specific metadata
         tags: List of tags for categorization
     """
@@ -29,8 +30,12 @@ class Playlist:
     description: Optional[str] = None
     tracks: List[Track] = field(default_factory=list)
     playlist_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
     platform_ids: Dict[str, str] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
     tags: List[str] = field(default_factory=list)
@@ -114,7 +119,10 @@ class Playlist:
         Returns:
             True if track was moved, False if indices are invalid
         """
-        if 0 <= from_index < len(self.tracks) and 0 <= to_index < len(self.tracks):
+        if (
+            0 <= from_index < len(self.tracks)
+            and 0 <= to_index < len(self.tracks)
+        ):
             track = self.tracks.pop(from_index)
             self.tracks.insert(to_index, track)
             self._update_timestamp()
@@ -128,7 +136,7 @@ class Playlist:
 
     def _update_timestamp(self) -> None:
         """Update the updated_at timestamp"""
-        self.updated_at = datetime.utcnow().isoformat()
+        self.updated_at = datetime.now(timezone.utc).isoformat()
 
     def add_platform_id(self, platform: str, platform_id: str) -> None:
         """

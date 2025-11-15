@@ -79,7 +79,7 @@ def cmd_list(args, manager: PlaylistManager) -> int:
 def cmd_show(args, manager: PlaylistManager) -> int:
     """Show playlist details"""
     playlist = manager.get_playlist(args.playlist_id)
-    if not playlist:
+    if playlist is None:
         print(f"Playlist not found: {args.playlist_id}")
         return 1
 
@@ -97,7 +97,7 @@ def cmd_delete(args, manager: PlaylistManager) -> int:
     """Delete a playlist"""
     if not args.force:
         playlist = manager.get_playlist(args.playlist_id)
-        if playlist:
+        if playlist is not None:
             confirm = input(f"Delete playlist '{playlist.name}'? (y/N): ")
             if confirm.lower() != 'y':
                 print("Cancelled.")
@@ -114,11 +114,15 @@ def cmd_delete(args, manager: PlaylistManager) -> int:
 def cmd_add_track(args, manager: PlaylistManager) -> int:
     """Add a track to a playlist"""
     playlist = manager.get_playlist(args.playlist_id)
-    if not playlist:
+    if playlist is None:
         print(f"Playlist not found: {args.playlist_id}")
         return 1
 
-    additional_artists = args.additional_artists.split(",") if args.additional_artists else []
+    additional_artists = (
+        args.additional_artists.split(",")
+        if args.additional_artists
+        else []
+    )
     track = Track(
         title=args.title,
         artist=args.artist,
@@ -181,7 +185,7 @@ def cmd_export(args, manager: PlaylistManager) -> int:
 def cmd_import(args, manager: PlaylistManager) -> int:
     """Import a playlist"""
     playlist = manager.import_playlist(args.input, args.format)
-    if playlist:
+    if playlist is not None:
         print(f"Imported playlist: {playlist.name}")
         print(f"Playlist ID: {playlist.playlist_id}")
         print(f"Tracks: {len(playlist.tracks)}")
@@ -241,38 +245,62 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Commands")
 
     # Create command
-    create_parser = subparsers.add_parser("create", help="Create a new playlist")
+    create_parser = subparsers.add_parser(
+        "create", help="Create a new playlist"
+    )
     create_parser.add_argument("name", help="Playlist name")
-    create_parser.add_argument("-d", "--description", help="Playlist description")
-    create_parser.add_argument("-t", "--tags", help="Comma-separated tags")
+    create_parser.add_argument(
+        "-d", "--description", help="Playlist description"
+    )
+    create_parser.add_argument(
+        "-t", "--tags", help="Comma-separated tags"
+    )
 
     # List command
     list_parser = subparsers.add_parser("list", help="List playlists")
     list_parser.add_argument("-q", "--query", help="Search query")
-    list_parser.add_argument("-t", "--tags", help="Filter by comma-separated tags")
+    list_parser.add_argument(
+        "-t", "--tags", help="Filter by comma-separated tags"
+    )
 
     # Show command
-    show_parser = subparsers.add_parser("show", help="Show playlist details")
+    show_parser = subparsers.add_parser(
+        "show", help="Show playlist details"
+    )
     show_parser.add_argument("playlist_id", help="Playlist ID")
-    show_parser.add_argument("--no-tracks", action="store_true", help="Don't show tracks")
+    show_parser.add_argument(
+        "--no-tracks", action="store_true", help="Don't show tracks"
+    )
 
     # Delete command
-    delete_parser = subparsers.add_parser("delete", help="Delete a playlist")
+    delete_parser = subparsers.add_parser(
+        "delete", help="Delete a playlist"
+    )
     delete_parser.add_argument("playlist_id", help="Playlist ID")
-    delete_parser.add_argument("-f", "--force", action="store_true", help="Skip confirmation")
+    delete_parser.add_argument(
+        "-f", "--force", action="store_true", help="Skip confirmation"
+    )
 
     # Add track command
-    add_track_parser = subparsers.add_parser("add-track", help="Add a track to a playlist")
+    add_track_parser = subparsers.add_parser(
+        "add-track", help="Add a track to a playlist"
+    )
     add_track_parser.add_argument("playlist_id", help="Playlist ID")
     add_track_parser.add_argument("title", help="Track title")
     add_track_parser.add_argument("artist", help="Artist name")
     add_track_parser.add_argument("-a", "--album", help="Album name")
-    add_track_parser.add_argument("-d", "--duration", type=int, help="Duration in milliseconds")
+    add_track_parser.add_argument(
+        "-d", "--duration", type=int, help="Duration in milliseconds"
+    )
     add_track_parser.add_argument("-i", "--isrc", help="ISRC code")
-    add_track_parser.add_argument("--additional-artists", help="Comma-separated additional artists")
+    add_track_parser.add_argument(
+        "--additional-artists", help="Comma-separated additional artists"
+    )
 
     # Remove track command
-    remove_track_parser = subparsers.add_parser("remove-track", help="Remove a track from a playlist")
+    remove_track_parser = subparsers.add_parser(
+        "remove-track", help="Remove a track from a playlist"
+    )
     remove_track_parser.add_argument("playlist_id", help="Playlist ID")
     remove_track_parser.add_argument("track_id", help="Track ID")
 
@@ -287,29 +315,59 @@ def main():
     tag_parser.add_argument("tags", help="Comma-separated tags")
 
     # Export command
-    export_parser = subparsers.add_parser("export", help="Export a playlist")
+    export_parser = subparsers.add_parser(
+        "export", help="Export a playlist"
+    )
     export_parser.add_argument("playlist_id", help="Playlist ID")
     export_parser.add_argument("output", help="Output file path")
-    export_parser.add_argument("-f", "--format", choices=["json", "csv"], default="json", help="Export format")
+    export_parser.add_argument(
+        "-f",
+        "--format",
+        choices=["json", "csv"],
+        default="json",
+        help="Export format",
+    )
 
     # Import command
-    import_parser = subparsers.add_parser("import", help="Import a playlist")
+    import_parser = subparsers.add_parser(
+        "import", help="Import a playlist"
+    )
     import_parser.add_argument("input", help="Input file path")
-    import_parser.add_argument("-f", "--format", choices=["json", "csv"], default="json", help="Import format")
+    import_parser.add_argument(
+        "-f",
+        "--format",
+        choices=["json", "csv"],
+        default="json",
+        help="Import format",
+    )
 
     # Duplicate command
-    duplicate_parser = subparsers.add_parser("duplicate", help="Duplicate a playlist")
-    duplicate_parser.add_argument("playlist_id", help="Playlist ID to duplicate")
-    duplicate_parser.add_argument("-n", "--name", help="Name for the duplicate")
+    duplicate_parser = subparsers.add_parser(
+        "duplicate", help="Duplicate a playlist"
+    )
+    duplicate_parser.add_argument(
+        "playlist_id", help="Playlist ID to duplicate"
+    )
+    duplicate_parser.add_argument(
+        "-n", "--name", help="Name for the duplicate"
+    )
 
     # Merge command
-    merge_parser = subparsers.add_parser("merge", help="Merge multiple playlists")
-    merge_parser.add_argument("playlist_ids", help="Comma-separated playlist IDs")
+    merge_parser = subparsers.add_parser(
+        "merge", help="Merge multiple playlists"
+    )
+    merge_parser.add_argument(
+        "playlist_ids", help="Comma-separated playlist IDs"
+    )
     merge_parser.add_argument("name", help="Name for merged playlist")
-    merge_parser.add_argument("--keep-duplicates", action="store_true", help="Keep duplicate tracks")
+    merge_parser.add_argument(
+        "--keep-duplicates",
+        action="store_true",
+        help="Keep duplicate tracks",
+    )
 
     # Stats command
-    stats_parser = subparsers.add_parser("stats", help="Show statistics")
+    subparsers.add_parser("stats", help="Show statistics")
 
     args = parser.parse_args()
 

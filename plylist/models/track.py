@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field, asdict
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 
@@ -17,7 +17,8 @@ class Track:
         album: Album name (optional)
         duration_ms: Duration in milliseconds (optional)
         isrc: International Standard Recording Code (optional)
-        platform_ids: Dictionary mapping platform names to platform-specific IDs
+        platform_ids: Dictionary mapping platform names to
+            platform-specific IDs
         track_id: Unique identifier for this track
         added_at: Timestamp when track was added
         additional_artists: List of additional artists/collaborators
@@ -31,7 +32,9 @@ class Track:
     isrc: Optional[str] = None
     platform_ids: Dict[str, str] = field(default_factory=dict)
     track_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    added_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    added_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
     additional_artists: list[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -90,8 +93,12 @@ class Track:
             return self.isrc == other.isrc
 
         # Normalize strings for comparison
-        title_match = self.title.lower().strip() == other.title.lower().strip()
-        artist_match = self.artist.lower().strip() == other.artist.lower().strip()
+        title_match = (
+            self.title.lower().strip() == other.title.lower().strip()
+        )
+        artist_match = (
+            self.artist.lower().strip() == other.artist.lower().strip()
+        )
 
         if strict:
             return title_match and artist_match

@@ -123,7 +123,9 @@ class PlatformBase(ABC):
         pass
 
     @abstractmethod
-    def add_tracks_to_playlist(self, platform_playlist_id: str, track_ids: List[str]) -> bool:
+    def add_tracks_to_playlist(
+        self, platform_playlist_id: str, track_ids: List[str]
+    ) -> bool:
         """
         Add tracks to a playlist on the platform
 
@@ -137,7 +139,9 @@ class PlatformBase(ABC):
         pass
 
     @abstractmethod
-    def remove_tracks_from_playlist(self, platform_playlist_id: str, track_ids: List[str]) -> bool:
+    def remove_tracks_from_playlist(
+        self, platform_playlist_id: str, track_ids: List[str]
+    ) -> bool:
         """
         Remove tracks from a playlist on the platform
 
@@ -173,7 +177,9 @@ class PlatformBase(ABC):
                 return True
         return False
 
-    def sync_playlist_from_platform(self, platform_id: str) -> Optional[Playlist]:
+    def sync_playlist_from_platform(
+        self, platform_id: str
+    ) -> Optional[Playlist]:
         """
         Sync a playlist from the platform to local format
 
@@ -184,6 +190,6 @@ class PlatformBase(ABC):
             Playlist object if successful, None otherwise
         """
         playlist = self.get_playlist(platform_id)
-        if playlist:
+        if playlist is not None:
             playlist.add_platform_id(self.platform_name, platform_id)
         return playlist

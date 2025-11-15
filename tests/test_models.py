@@ -1,11 +1,10 @@
 """Tests for Plylist data models"""
 
-import unittest
 from plylist.models.track import Track
 from plylist.models.playlist import Playlist
 
 
-class TestTrack(unittest.TestCase):
+class TestTrack:
     """Test Track model"""
 
     def test_track_creation(self):
@@ -16,19 +15,19 @@ class TestTrack(unittest.TestCase):
             album="Test Album",
             duration_ms=180000,
         )
-        self.assertEqual(track.title, "Test Song")
-        self.assertEqual(track.artist, "Test Artist")
-        self.assertEqual(track.album, "Test Album")
-        self.assertEqual(track.duration_ms, 180000)
-        self.assertIsNotNone(track.track_id)
+        assert track.title == "Test Song"
+        assert track.artist == "Test Artist"
+        assert track.album == "Test Album"
+        assert track.duration_ms == 180000
+        assert track.track_id is not None
 
     def test_track_to_dict(self):
         """Test track serialization"""
         track = Track(title="Song", artist="Artist")
         data = track.to_dict()
-        self.assertIsInstance(data, dict)
-        self.assertEqual(data["title"], "Song")
-        self.assertEqual(data["artist"], "Artist")
+        assert isinstance(data, dict)
+        assert data["title"] == "Song"
+        assert data["artist"] == "Artist"
 
     def test_track_from_dict(self):
         """Test track deserialization"""
@@ -45,9 +44,9 @@ class TestTrack(unittest.TestCase):
             "metadata": {},
         }
         track = Track.from_dict(data)
-        self.assertEqual(track.title, "Song")
-        self.assertEqual(track.artist, "Artist")
-        self.assertEqual(track.track_id, "test-id")
+        assert track.title == "Song"
+        assert track.artist == "Artist"
+        assert track.track_id == "test-id"
 
     def test_track_platform_ids(self):
         """Test adding and getting platform IDs"""
@@ -55,9 +54,9 @@ class TestTrack(unittest.TestCase):
         track.add_platform_id("spotify", "spotify-123")
         track.add_platform_id("apple_music", "am-456")
 
-        self.assertEqual(track.get_platform_id("spotify"), "spotify-123")
-        self.assertEqual(track.get_platform_id("apple_music"), "am-456")
-        self.assertIsNone(track.get_platform_id("youtube"))
+        assert track.get_platform_id("spotify") == "spotify-123"
+        assert track.get_platform_id("apple_music") == "am-456"
+        assert track.get_platform_id("youtube") is None
 
     def test_track_matches(self):
         """Test track matching"""
@@ -65,22 +64,24 @@ class TestTrack(unittest.TestCase):
         track2 = Track(title="Song", artist="Artist")
         track3 = Track(title="Different", artist="Artist")
 
-        self.assertTrue(track1.matches(track2))
-        self.assertFalse(track1.matches(track3))
+        assert track1.matches(track2) is True
+        assert track1.matches(track3) is False
 
     def test_track_matches_with_isrc(self):
         """Test track matching using ISRC"""
         track1 = Track(title="Song", artist="Artist", isrc="US123")
-        track2 = Track(title="Different Title", artist="Different Artist", isrc="US123")
+        track2 = Track(
+            title="Different Title", artist="Different Artist", isrc="US123"
+        )
         track3 = Track(title="Song", artist="Artist", isrc="US456")
 
         # Same ISRC should match even with different title/artist
-        self.assertTrue(track1.matches(track2))
+        assert track1.matches(track2) is True
         # Different ISRC should not match
-        self.assertFalse(track1.matches(track3))
+        assert track1.matches(track3) is False
 
 
-class TestPlaylist(unittest.TestCase):
+class TestPlaylist:
     """Test Playlist model"""
 
     def test_playlist_creation(self):
@@ -90,11 +91,11 @@ class TestPlaylist(unittest.TestCase):
             description="A test playlist",
             tags=["test", "demo"],
         )
-        self.assertEqual(playlist.name, "Test Playlist")
-        self.assertEqual(playlist.description, "A test playlist")
-        self.assertEqual(playlist.tags, ["test", "demo"])
-        self.assertEqual(len(playlist.tracks), 0)
-        self.assertIsNotNone(playlist.playlist_id)
+        assert playlist.name == "Test Playlist"
+        assert playlist.description == "A test playlist"
+        assert playlist.tags == ["test", "demo"]
+        assert len(playlist.tracks) == 0
+        assert playlist.playlist_id is not None
 
     def test_add_track(self):
         """Test adding tracks to playlist"""
@@ -105,9 +106,9 @@ class TestPlaylist(unittest.TestCase):
         playlist.add_track(track1)
         playlist.add_track(track2)
 
-        self.assertEqual(len(playlist.tracks), 2)
-        self.assertEqual(playlist.tracks[0].title, "Song 1")
-        self.assertEqual(playlist.tracks[1].title, "Song 2")
+        assert len(playlist.tracks) == 2
+        assert playlist.tracks[0].title == "Song 1"
+        assert playlist.tracks[1].title == "Song 2"
 
     def test_remove_track(self):
         """Test removing tracks from playlist"""
@@ -115,17 +116,17 @@ class TestPlaylist(unittest.TestCase):
         track = Track(title="Song", artist="Artist")
         playlist.add_track(track)
 
-        self.assertEqual(len(playlist.tracks), 1)
+        assert len(playlist.tracks) == 1
         result = playlist.remove_track(track.track_id)
 
-        self.assertTrue(result)
-        self.assertEqual(len(playlist.tracks), 0)
+        assert result is True
+        assert len(playlist.tracks) == 0
 
     def test_remove_track_not_found(self):
         """Test removing non-existent track"""
         playlist = Playlist(name="Test")
         result = playlist.remove_track("non-existent-id")
-        self.assertFalse(result)
+        assert result is False
 
     def test_move_track(self):
         """Test moving tracks in playlist"""
@@ -141,10 +142,10 @@ class TestPlaylist(unittest.TestCase):
         # Move track from index 0 to index 2
         result = playlist.move_track(0, 2)
 
-        self.assertTrue(result)
-        self.assertEqual(playlist.tracks[0].title, "Song 2")
-        self.assertEqual(playlist.tracks[1].title, "Song 3")
-        self.assertEqual(playlist.tracks[2].title, "Song 1")
+        assert result is True
+        assert playlist.tracks[0].title == "Song 2"
+        assert playlist.tracks[1].title == "Song 3"
+        assert playlist.tracks[2].title == "Song 1"
 
     def test_get_duration(self):
         """Test calculating playlist duration"""
@@ -155,7 +156,7 @@ class TestPlaylist(unittest.TestCase):
         playlist.add_track(track1)
         playlist.add_track(track2)
 
-        self.assertEqual(playlist.get_duration_ms(), 420000)
+        assert playlist.get_duration_ms() == 420000
 
     def test_to_dict_and_from_dict(self):
         """Test playlist serialization and deserialization"""
@@ -165,16 +166,16 @@ class TestPlaylist(unittest.TestCase):
 
         # Serialize
         data = playlist.to_dict()
-        self.assertIsInstance(data, dict)
-        self.assertEqual(data["name"], "Test")
-        self.assertEqual(len(data["tracks"]), 1)
+        assert isinstance(data, dict)
+        assert data["name"] == "Test"
+        assert len(data["tracks"]) == 1
 
         # Deserialize
         restored = Playlist.from_dict(data)
-        self.assertEqual(restored.name, "Test")
-        self.assertEqual(restored.description, "Description")
-        self.assertEqual(len(restored.tracks), 1)
-        self.assertEqual(restored.tracks[0].title, "Song")
+        assert restored.name == "Test"
+        assert restored.description == "Description"
+        assert len(restored.tracks) == 1
+        assert restored.tracks[0].title == "Song"
 
     def test_tags(self):
         """Test playlist tags"""
@@ -183,17 +184,13 @@ class TestPlaylist(unittest.TestCase):
         playlist.add_tag("rock")
         playlist.add_tag("classic")
 
-        self.assertIn("rock", playlist.tags)
-        self.assertIn("classic", playlist.tags)
+        assert "rock" in playlist.tags
+        assert "classic" in playlist.tags
 
         result = playlist.remove_tag("rock")
-        self.assertTrue(result)
-        self.assertNotIn("rock", playlist.tags)
+        assert result is True
+        assert "rock" not in playlist.tags
 
         # Try removing non-existent tag
         result = playlist.remove_tag("pop")
-        self.assertFalse(result)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert result is False
