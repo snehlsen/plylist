@@ -122,6 +122,16 @@
             transform: none;
         }
 
+        #status-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #1976d2;
+            display: none;
+        }
+
         #token-display {
             margin-top: 30px;
             display: none;
@@ -186,6 +196,32 @@
         .error-box p {
             color: #721c24;
             font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .debug-toggle {
+            margin-top: 15px;
+            padding: 8px 15px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            width: auto;
+        }
+
+        .debug-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
         }
 
         .hint {
@@ -228,6 +264,7 @@
 
         <button id="auth-button" disabled>Authorize Apple Music</button>
 
+        <div id="status-display"></div>
         <div id="token-display"></div>
 
         <div class="hint">
@@ -237,20 +274,62 @@
 
     <script>
         let musicKitInstance = null;
+        let debugLogs = [];
+
+        function log(message, data = null) {
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${message}`;
+            console.log(logEntry, data || '');
+            debugLogs.push(logEntry + (data ? ' ' + JSON.stringify(data) : ''));
+        }
 
         // Enable button when developer token is entered
         const devTokenInput = document.getElementById('developer-token-input');
         const authButton = document.getElementById('auth-button');
+        const statusDisplay = document.getElementById('status-display');
 
         devTokenInput.addEventListener('input', function() {
             const token = this.value.trim();
             authButton.disabled = token.length < 10;
         });
 
+        function showStatus(message) {
+            statusDisplay.style.display = 'block';
+            statusDisplay.textContent = message;
+            statusDisplay.style.background = '#e3f2fd';
+            statusDisplay.style.color = '#1976d2';
+        }
+
+        function hideStatus() {
+            statusDisplay.style.display = 'none';
+        }
+
+        // Wait for user token with retries
+        async function waitForUserToken(maxAttempts = 10, delayMs = 500) {
+            log('Waiting for user token...', { maxAttempts, delayMs });
+
+            for (let i = 0; i < maxAttempts; i++) {
+                const token = musicKitInstance.musicUserToken;
+                log(`Attempt ${i + 1}/${maxAttempts}`, { tokenExists: !!token });
+
+                if (token) {
+                    log('User token found!', { tokenLength: token.length });
+                    return token;
+                }
+
+                // Wait before next attempt
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+
+            log('Timeout waiting for user token');
+            return null;
+        }
+
         document.addEventListener('musickitloaded', async function() {
-            console.log('MusicKit loaded successfully');
+            log('MusicKit loaded successfully');
 
             authButton.addEventListener('click', async () => {
+                debugLogs = []; // Reset logs
                 const developerToken = devTokenInput.value.trim();
 
                 if (!developerToken) {
@@ -259,9 +338,16 @@
                 }
 
                 authButton.disabled = true;
-                authButton.textContent = 'Connecting to Apple Music...';
+                authButton.textContent = 'Initializing...';
+                hideStatus();
+
+                const tokenDisplay = document.getElementById('token-display');
+                tokenDisplay.style.display = 'none';
 
                 try {
+                    log('Starting authorization process');
+                    showStatus('Step 1/4: Configuring MusicKit...');
+
                     // Configure MusicKit with the provided developer token
                     await MusicKit.configure({
                         developerToken: developerToken,
@@ -272,27 +358,88 @@
                     });
 
                     musicKitInstance = MusicKit.getInstance();
-                    console.log('MusicKit configured successfully');
+                    log('MusicKit configured successfully');
+
+                    // Check current authorization status
+                    const isAuthorized = musicKitInstance.isAuthorized;
+                    log('Current authorization status', { isAuthorized });
+
+                    showStatus('Step 2/4: Requesting authorization...');
+                    authButton.textContent = 'Waiting for authorization...';
 
                     // Request authorization
-                    const result = await musicKitInstance.authorize();
-                    console.log('Authorization result:', result);
+                    log('Calling authorize()');
+                    const authResult = await musicKitInstance.authorize();
+                    log('Authorization completed', { authResult });
 
-                    // Get the user token
-                    const userToken = musicKitInstance.musicUserToken;
+                    showStatus('Step 3/4: Retrieving user token...');
+                    authButton.textContent = 'Getting user token...';
+
+                    // Try to get the user token with retries
+                    let userToken = musicKitInstance.musicUserToken;
+                    log('Initial token check', { tokenExists: !!userToken });
+
+                    if (!userToken) {
+                        log('Token not immediately available, waiting...');
+                        showStatus('Step 3/4: Waiting for token (this may take a moment)...');
+                        userToken = await waitForUserToken();
+                    }
 
                     if (userToken) {
+                        log('Successfully retrieved user token', { tokenLength: userToken.length });
+                        showStatus('Step 4/4: Success!');
+                        hideStatus();
                         showSuccess(userToken);
                     } else {
-                        showError('Authorization succeeded but no user token was returned. Please try again.');
+                        log('Failed to retrieve user token');
+
+                        // Try one more time by checking authorization status
+                        const finalCheck = musicKitInstance.isAuthorized;
+                        const finalToken = musicKitInstance.musicUserToken;
+
+                        log('Final status check', {
+                            isAuthorized: finalCheck,
+                            hasToken: !!finalToken
+                        });
+
+                        if (finalToken) {
+                            showSuccess(finalToken);
+                        } else {
+                            showError(
+                                'Authorization succeeded but user token is not available. ' +
+                                'This can happen if:<br><br>' +
+                                '1. Your Apple Music subscription is not active<br>' +
+                                '2. You\'re using a free Apple ID<br>' +
+                                '3. There was a timing issue - try clicking the button again<br><br>' +
+                                'If you just authorized, try clicking "Authorize Apple Music" again without refreshing the page.',
+                                true
+                            );
+                        }
                     }
 
                 } catch (error) {
-                    console.error('Authorization failed:', error);
-                    showError(error.message || 'Authorization failed. Please check your developer token and try again.');
+                    log('Authorization error', {
+                        message: error.message,
+                        name: error.name,
+                        stack: error.stack
+                    });
+
+                    let errorMessage = error.message || 'Unknown error occurred';
+
+                    // Provide more specific error messages
+                    if (errorMessage.includes('Invalid token')) {
+                        errorMessage = 'Invalid developer token. Please check that you copied it correctly.';
+                    } else if (errorMessage.includes('popup')) {
+                        errorMessage = 'Authorization popup was blocked. Please allow popups for this page and try again.';
+                    } else if (errorMessage.includes('network')) {
+                        errorMessage = 'Network error. Please check your internet connection and try again.';
+                    }
+
+                    showError(errorMessage, true);
                 } finally {
                     authButton.disabled = false;
                     authButton.textContent = 'Authorize Apple Music';
+                    hideStatus();
                 }
             });
         });
@@ -315,24 +462,44 @@
             `;
         }
 
-        function showError(message) {
+        function showError(message, showDebug = false) {
             const display = document.getElementById('token-display');
             display.style.display = 'block';
+
+            let debugSection = '';
+            if (showDebug) {
+                debugSection = `
+                    <button class="debug-toggle" onclick="toggleDebug()">Show Debug Info</button>
+                    <div class="debug-info" id="debug-info">
+                        ${debugLogs.join('<br>')}
+                    </div>
+                `;
+            }
+
             display.innerHTML = `
                 <div class="error-box">
                     <h2>❌ Error</h2>
                     <p>${message}</p>
                     <p style="margin-top: 10px;">
-                        <strong>Common issues:</strong>
+                        <strong>Troubleshooting:</strong>
                     </p>
-                    <ul style="margin-left: 20px; margin-top: 5px;">
-                        <li>Invalid developer token</li>
-                        <li>No active Apple Music subscription</li>
-                        <li>Browser blocked the popup window</li>
-                        <li>Network connectivity issues</li>
+                    <ul style="margin-left: 20px; margin-top: 5px; line-height: 1.6;">
+                        <li>Make sure you have an active Apple Music subscription</li>
+                        <li>Check that your developer token is correct</li>
+                        <li>Allow popups for this page in your browser</li>
+                        <li>Try refreshing the page and starting over</li>
+                        <li>Check browser console (F12) for detailed errors</li>
                     </ul>
+                    ${debugSection}
                 </div>
             `;
+        }
+
+        function toggleDebug() {
+            const debugInfo = document.getElementById('debug-info');
+            if (debugInfo) {
+                debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
+            }
         }
 
         function copyToken() {
