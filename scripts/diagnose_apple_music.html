@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple Music Token Diagnostic Tool</title>
+    <script src="https://js-cdn.music.apple.com/musickit/v3/musickit.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .section h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        .log-error {
+            color: #f00;
+        }
+
+        .log-success {
+            color: #0f0;
+        }
+
+        .log-warning {
+            color: #ff0;
+        }
+
+        .log-info {
+            color: #0ff;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .token-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Apple Music Token Diagnostic Tool</h1>
+
+        <div class="section">
+            <h2>Step 1: Validate Developer Token</h2>
+            <label>Paste your developer token:</label>
+            <textarea id="dev-token" placeholder="eyJhbGciOiJFUzI1NiIsImtpZCI6..."></textarea>
+            <button onclick="validateToken()">Validate Token Format</button>
+            <button onclick="decodeToken()">Decode Token (see what's inside)</button>
+            <div id="token-validation"></div>
+        </div>
+
+        <div class="section">
+            <h2>Step 2: Test MusicKit Configuration</h2>
+            <button onclick="testMusicKitConfig()" id="test-config-btn">Test Configuration</button>
+            <button onclick="testAuthorization()" id="test-auth-btn" disabled>Test Authorization</button>
+            <button onclick="getStorefront()" id="get-storefront-btn" disabled>Get Storefront</button>
+            <button onclick="getUserToken()" id="get-token-btn" disabled>Get User Token</button>
+        </div>
+
+        <div class="section">
+            <h2>Diagnostic Log</h2>
+            <button onclick="clearLog()">Clear Log</button>
+            <button onclick="copyLog()">Copy Log</button>
+            <div id="log" class="log"></div>
+        </div>
+
+        <div class="section">
+            <h2>Browser Information</h2>
+            <div id="browser-info" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+        let musicKitInstance = null;
+        let developerToken = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const entry = `[${timestamp}] ${message}`;
+            logs.push({ entry, type });
+
+            const logDiv = document.getElementById('log');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = entry;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+
+            console.log(entry);
+        }
+
+        function clearLog() {
+            logs = [];
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function copyLog() {
+            const logText = logs.map(l => l.entry).join('\n');
+            navigator.clipboard.writeText(logText).then(() => {
+                alert('Log copied to clipboard!');
+            });
+        }
+
+        function showStatus(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function validateToken() {
+            const token = document.getElementById('dev-token').value.trim();
+
+            if (!token) {
+                showStatus('token-validation', 'Please paste a token first', 'error');
+                return;
+            }
+
+            log('Validating token format...', 'info');
+
+            // Check if it looks like a JWT
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                showStatus('token-validation', `Invalid JWT format. Expected 3 parts (header.payload.signature), found ${parts.length}`, 'error');
+                log(`Invalid JWT format: ${parts.length} parts`, 'error');
+                return;
+            }
+
+            log('Token has correct JWT structure (3 parts)', 'success');
+
+            try {
+                // Try to decode header
+                const header = JSON.parse(atob(parts[0]));
+                log(`Header: ${JSON.stringify(header)}`, 'info');
+
+                // Try to decode payload
+                const payload = JSON.parse(atob(parts[1]));
+                log(`Payload: ${JSON.stringify(payload)}`, 'info');
+
+                // Check required fields
+                const required = ['iss', 'iat', 'exp'];
+                const missing = required.filter(field => !payload[field]);
+
+                if (missing.length > 0) {
+                    showStatus('token-validation', `Missing required fields: ${missing.join(', ')}`, 'error');
+                    log(`Missing fields: ${missing.join(', ')}`, 'error');
+                    return;
+                }
+
+                // Check expiration
+                const now = Math.floor(Date.now() / 1000);
+                const exp = payload.exp;
+                const iat = payload.iat;
+
+                if (exp < now) {
+                    showStatus('token-validation', `Token expired on ${new Date(exp * 1000).toISOString()}`, 'error');
+                    log('Token is EXPIRED', 'error');
+                    return;
+                }
+
+                const daysUntilExpiry = Math.floor((exp - now) / 86400);
+                log(`Token expires in ${daysUntilExpiry} days`, 'success');
+                log(`Issued: ${new Date(iat * 1000).toISOString()}`, 'info');
+                log(`Expires: ${new Date(exp * 1000).toISOString()}`, 'info');
+                log(`Team ID (iss): ${payload.iss}`, 'info');
+
+                showStatus('token-validation',
+                    `✓ Token is valid!<div class="token-info">` +
+                    `Team ID: ${payload.iss}<br>` +
+                    `Algorithm: ${header.alg}<br>` +
+                    `Key ID: ${header.kid || 'N/A'}<br>` +
+                    `Issued: ${new Date(iat * 1000).toLocaleString()}<br>` +
+                    `Expires: ${new Date(exp * 1000).toLocaleString()} (${daysUntilExpiry} days)</div>`,
+                    'success');
+
+                developerToken = token;
+                document.getElementById('test-config-btn').disabled = false;
+
+            } catch (e) {
+                showStatus('token-validation', `Error decoding token: ${e.message}`, 'error');
+                log(`Decode error: ${e.message}`, 'error');
+            }
+        }
+
+        function decodeToken() {
+            const token = document.getElementById('dev-token').value.trim();
+            if (!token) {
+                alert('Please paste a token first');
+                return;
+            }
+
+            try {
+                const parts = token.split('.');
+                const header = JSON.parse(atob(parts[0]));
+                const payload = JSON.parse(atob(parts[1]));
+
+                const info = {
+                    header,
+                    payload,
+                    signature: parts[2].substring(0, 20) + '...'
+                };
+
+                alert('Token contents (check console for full details):\n\n' + JSON.stringify(info, null, 2));
+                console.log('Full token details:', info);
+            } catch (e) {
+                alert('Error decoding: ' + e.message);
+            }
+        }
+
+        async function testMusicKitConfig() {
+            const token = document.getElementById('dev-token').value.trim();
+            if (!token) {
+                alert('Please validate token first');
+                return;
+            }
+
+            log('Testing MusicKit configuration...', 'info');
+
+            try {
+                log('Calling MusicKit.configure()...', 'info');
+
+                await MusicKit.configure({
+                    developerToken: token,
+                    app: {
+                        name: 'Plylist Diagnostic',
+                        build: '1.0.0'
+                    }
+                });
+
+                log('MusicKit.configure() succeeded', 'success');
+
+                musicKitInstance = MusicKit.getInstance();
+                log('MusicKit.getInstance() succeeded', 'success');
+                log(`MusicKit version: ${musicKitInstance.version || 'unknown'}`, 'info');
+                log(`Is authorized: ${musicKitInstance.isAuthorized}`, 'info');
+                log(`Has user token: ${!!musicKitInstance.musicUserToken}`, 'info');
+
+                document.getElementById('test-auth-btn').disabled = false;
+                document.getElementById('get-storefront-btn').disabled = false;
+
+                showStatus('token-validation', '✓ MusicKit configured successfully!', 'success');
+
+            } catch (error) {
+                log(`MusicKit.configure() failed: ${error.message}`, 'error');
+                log(`Error name: ${error.name}`, 'error');
+                log(`Error stack: ${error.stack}`, 'error');
+
+                showStatus('token-validation',
+                    `✗ Configuration failed: ${error.message}<br><br>` +
+                    `This could mean:<br>` +
+                    `- Invalid developer token<br>` +
+                    `- Token doesn't have MusicKit permissions<br>` +
+                    `- Network/CORS issues`,
+                    'error');
+            }
+        }
+
+        async function testAuthorization() {
+            if (!musicKitInstance) {
+                alert('Please configure MusicKit first');
+                return;
+            }
+
+            log('Testing authorization...', 'info');
+
+            try {
+                log('Calling musicKitInstance.authorize()...', 'info');
+                const result = await musicKitInstance.authorize();
+                log(`Authorization result: ${JSON.stringify(result)}`, 'success');
+                log(`Is authorized: ${musicKitInstance.isAuthorized}`, 'info');
+
+                document.getElementById('get-token-btn').disabled = false;
+
+                showStatus('token-validation', '✓ Authorization successful!', 'success');
+
+            } catch (error) {
+                log(`Authorization failed: ${error.message}`, 'error');
+                log(`Error name: ${error.name}`, 'error');
+                log(`Error stack: ${error.stack}`, 'error');
+
+                showStatus('token-validation', `✗ Authorization failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function getStorefront() {
+            if (!musicKitInstance) {
+                alert('Please configure MusicKit first');
+                return;
+            }
+
+            log('Getting storefront (without user token)...', 'info');
+
+            try {
+                // Try to get storefront from catalog
+                const response = await fetch(
+                    'https://api.music.apple.com/v1/me/storefront',
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${developerToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    log(`HTTP ${response.status}: ${response.statusText}`, 'error');
+                    const text = await response.text();
+                    log(`Response: ${text}`, 'error');
+                } else {
+                    const data = await response.json();
+                    log(`Storefront data: ${JSON.stringify(data)}`, 'success');
+                }
+
+            } catch (error) {
+                log(`Storefront request failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function getUserToken() {
+            if (!musicKitInstance) {
+                alert('Please configure and authorize first');
+                return;
+            }
+
+            log('Attempting to get user token...', 'info');
+
+            for (let i = 0; i < 15; i++) {
+                const token = musicKitInstance.musicUserToken;
+                log(`Attempt ${i + 1}/15: ${token ? 'FOUND' : 'not found'}`, token ? 'success' : 'warning');
+
+                if (token) {
+                    log(`User token: ${token}`, 'success');
+                    log(`Token length: ${token.length}`, 'info');
+
+                    showStatus('token-validation',
+                        `✓ User token retrieved!<div class="token-info">${token}</div>` +
+                        `<button onclick="navigator.clipboard.writeText('${token}')">Copy Token</button>`,
+                        'success');
+                    return;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            log('Timeout: User token not available after 7.5 seconds', 'error');
+            log(`Final authorization status: ${musicKitInstance.isAuthorized}`, 'info');
+            log(`Has subscription: ${musicKitInstance.hasSubscription || 'unknown'}`, 'info');
+
+            showStatus('token-validation',
+                '✗ Could not retrieve user token. Possible reasons:<br>' +
+                '- No active Apple Music subscription<br>' +
+                '- Using Apple ID without Apple Music<br>' +
+                '- Account/region restrictions',
+                'error');
+        }
+
+        // Show browser info on load
+        window.addEventListener('load', () => {
+            const browserInfo = document.getElementById('browser-info');
+            browserInfo.innerHTML =
+                `User Agent: ${navigator.userAgent}<br>` +
+                `Browser: ${navigator.appName}<br>` +
+                `Platform: ${navigator.platform}<br>` +
+                `Language: ${navigator.language}<br>` +
+                `Online: ${navigator.onLine}<br>` +
+                `Cookies Enabled: ${navigator.cookieEnabled}`;
+
+            log('Diagnostic tool loaded', 'info');
+            log('MusicKit library loaded: ' + (typeof MusicKit !== 'undefined'), 'info');
+        });
+
+        // Catch any global errors
+        window.addEventListener('error', (event) => {
+            log(`Global error: ${event.message}`, 'error');
+            log(`File: ${event.filename}:${event.lineno}:${event.colno}`, 'error');
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            log(`Unhandled promise rejection: ${event.reason}`, 'error');
+        });
+    </script>
+</body>
+</html>
