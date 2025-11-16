@@ -5,13 +5,14 @@ Plylist is a Python application for managing music playlists independent of any 
 ## Features
 
 - **Platform-Agnostic**: Manage playlists without being locked to any specific streaming service
+- **Apple Music Integration**: Full support for syncing with Apple Music (authentication, search, sync)
 - **Full CRUD Operations**: Create, read, update, and delete playlists
 - **Track Management**: Add, remove, and reorder tracks within playlists
 - **Import/Export**: Support for JSON and CSV formats
 - **Tagging System**: Organize playlists with custom tags
 - **Playlist Operations**: Duplicate and merge playlists
 - **CLI Interface**: Easy-to-use command-line interface
-- **Extensible**: Platform abstraction layer ready for Spotify, Apple Music, YouTube Music integrations
+- **Extensible**: Platform abstraction layer ready for Spotify, YouTube Music, and other integrations
 
 ## Installation
 
@@ -38,6 +39,12 @@ cd plylist
 
 # Install the package
 pip install -e .
+
+# Or with Apple Music support
+pip install -e ".[apple-music]"
+
+# Or with all platform integrations
+pip install -e ".[all]"
 ```
 
 ## Quick Start
@@ -167,9 +174,65 @@ By default, playlists are stored in `~/.plylist/playlists/` as JSON files. Each 
 - Individual JSON file with full data
 - Entry in the index for quick listing
 
-## Platform Integration (Future)
+## Platform Integrations
 
-The platform abstraction layer is ready for integration with streaming services:
+### Apple Music (Available)
+
+Plylist now includes full Apple Music integration! Sync your playlists, search for tracks, and manage your Apple Music library.
+
+#### Installation
+
+```bash
+# Install with Apple Music support
+pip install -e ".[apple-music]"
+```
+
+#### Setup
+
+1. Create an Apple Developer account
+2. Enable MusicKit and create a key
+3. Set up environment variables (see [Apple Music Setup Guide](docs/apple_music_setup.md))
+
+```bash
+export APPLE_MUSIC_TEAM_ID="your-team-id"
+export APPLE_MUSIC_KEY_ID="your-key-id"
+export APPLE_MUSIC_PRIVATE_KEY_PATH="/path/to/key.p8"
+export APPLE_MUSIC_USER_TOKEN="your-user-token"
+```
+
+#### Usage
+
+```python
+from plylist import PlaylistManager, AppleMusicPlatform
+
+# Initialize
+manager = PlaylistManager()
+apple_music = AppleMusicPlatform()
+
+# Authenticate
+if apple_music.authenticate():
+    manager.register_platform(apple_music)
+
+    # Search for tracks
+    track = apple_music.search_track("Billie Jean", "Michael Jackson")
+
+    # Sync playlist to Apple Music
+    manager.sync_to_platform(playlist_id, "apple_music")
+
+    # Import from Apple Music
+    imported = manager.sync_from_platform("apple_music", am_playlist_id)
+```
+
+See the [Apple Music Setup Guide](docs/apple_music_setup.md) for detailed instructions.
+
+### Future Platforms
+
+The platform abstraction layer is ready for additional streaming services:
+- Spotify (planned)
+- YouTube Music (planned)
+- Tidal (planned)
+
+To implement a new platform, extend the `PlatformBase` class:
 
 ```python
 from plylist.platforms.base import PlatformBase
@@ -178,12 +241,6 @@ class SpotifyPlatform(PlatformBase):
     """Spotify integration"""
     # Implement abstract methods
     pass
-
-# Register with manager
-manager.register_platform(SpotifyPlatform("spotify"))
-
-# Sync to Spotify
-manager.sync_to_platform(playlist_id, "spotify")
 ```
 
 ## Data Format
@@ -226,6 +283,7 @@ Song Title,Artist Name,Album Name,240000,USRC12345678,
 
 See the `examples/` directory for detailed usage examples:
 - `basic_usage.py` - Comprehensive walkthrough of core features
+- `apple_music_integration.py` - Apple Music platform integration example
 
 ## Development
 

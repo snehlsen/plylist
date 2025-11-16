@@ -6,6 +6,7 @@ from typing import Optional
 from ..manager import PlaylistManager
 from ..models.track import Track
 from ..models.playlist import Playlist
+from . import apple_music_commands
 
 
 def format_playlist_info(playlist: Playlist) -> str:
@@ -66,7 +67,14 @@ def cmd_list(args, manager: PlaylistManager) -> int:
 
     print(f"\nFound {len(playlists)} playlist(s):\n")
     for p in playlists:
-        print(f"  {p['name']}")
+        # Get full playlist to check platform IDs
+        playlist = manager.get_playlist(p['playlist_id'])
+        synced_platforms = []
+        if playlist and playlist.platform_ids:
+            synced_platforms = list(playlist.platform_ids.keys())
+
+        sync_status = f" [Synced: {', '.join(synced_platforms)}]" if synced_platforms else " [Local only]"
+        print(f"  {p['name']}{sync_status}")
         print(f"    ID: {p['playlist_id']}")
         print(f"    Tracks: {p['track_count']}")
         if p.get('tags'):
@@ -369,6 +377,48 @@ def main():
     # Stats command
     subparsers.add_parser("stats", help="Show statistics")
 
+    # Apple Music commands
+    am_parser = subparsers.add_parser(
+        "apple-music", help="Apple Music integration commands"
+    )
+    am_subparsers = am_parser.add_subparsers(
+        dest="am_command", help="Apple Music operations"
+    )
+
+    # Apple Music auth
+    am_subparsers.add_parser("auth", help="Test Apple Music authentication")
+
+    # Apple Music search
+    am_search_parser = am_subparsers.add_parser(
+        "search", help="Search for a track on Apple Music"
+    )
+    am_search_parser.add_argument("title", help="Track title")
+    am_search_parser.add_argument("artist", help="Artist name")
+
+    # Apple Music sync-to
+    am_sync_to_parser = am_subparsers.add_parser(
+        "sync-to", help="Sync a local playlist to Apple Music"
+    )
+    am_sync_to_parser.add_argument("playlist_id", help="Local playlist ID to sync")
+
+    # Apple Music sync-from
+    am_sync_from_parser = am_subparsers.add_parser(
+        "sync-from", help="Import a playlist from Apple Music"
+    )
+    am_sync_from_parser.add_argument(
+        "apple_music_id", help="Apple Music playlist ID"
+    )
+
+    # Apple Music playlists
+    am_subparsers.add_parser(
+        "playlists", help="List your Apple Music playlists"
+    )
+
+    # Apple Music status
+    am_subparsers.add_parser(
+        "status", help="Show sync status for all playlists"
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -377,6 +427,30 @@ def main():
 
     # Initialize manager
     manager = PlaylistManager()
+
+    # Handle Apple Music subcommands
+    if args.command == "apple-music":
+        if not hasattr(args, "am_command") or not args.am_command:
+            am_parser.print_help()
+            return 1
+
+        am_commands = {
+            "auth": apple_music_commands.cmd_am_auth,
+            "search": apple_music_commands.cmd_am_search,
+            "sync-to": apple_music_commands.cmd_am_sync_to,
+            "sync-from": apple_music_commands.cmd_am_sync_from,
+            "playlists": apple_music_commands.cmd_am_playlists,
+            "status": apple_music_commands.cmd_am_status,
+        }
+
+        try:
+            return am_commands[args.am_command](args, manager)
+        except KeyboardInterrupt:
+            print("\nCancelled.")
+            return 130
+        except Exception as e:
+            print(f"Error: {e}")
+            return 1
 
     # Command dispatch
     commands = {
