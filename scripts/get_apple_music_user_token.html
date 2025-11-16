@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple Music User Token - Plylist</title>
+    <script src="https://js-cdn.music.apple.com/musickit/v3/musickit.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .instructions {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+
+        .instructions h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .token-input-section {
+            margin-bottom: 30px;
+        }
+
+        .token-input-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .token-input-section input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.3s;
+        }
+
+        .token-input-section input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #token-display {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        .success-box h2 {
+            color: #155724;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .success-box p {
+            color: #155724;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .token-box {
+            background: white;
+            border: 2px solid #28a745;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #333;
+            position: relative;
+        }
+
+        .copy-button {
+            margin-top: 15px;
+            background: #28a745;
+            width: auto;
+            padding: 10px 20px;
+        }
+
+        .copy-button:hover {
+            background: #218838;
+        }
+
+        .error-box {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        .error-box h2 {
+            color: #721c24;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .error-box p {
+            color: #721c24;
+            font-size: 14px;
+        }
+
+        .hint {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Apple Music User Token</h1>
+        <p class="subtitle">Plylist - Platform-agnostic Playlist Manager</p>
+
+        <div class="instructions">
+            <h3>📋 Instructions</h3>
+            <ol>
+                <li>Generate your developer token using:<br><code>python scripts/generate_developer_token.py</code></li>
+                <li>Paste the developer token in the field below</li>
+                <li>Click "Authorize Apple Music"</li>
+                <li>Sign in with your Apple ID when prompted</li>
+                <li>Copy the user token that appears</li>
+                <li>Set it as <code>APPLE_MUSIC_USER_TOKEN</code> environment variable</li>
+            </ol>
+        </div>
+
+        <div class="token-input-section">
+            <label for="developer-token-input">Developer Token:</label>
+            <input
+                type="text"
+                id="developer-token-input"
+                placeholder="Paste your developer token here..."
+                spellcheck="false"
+            >
+        </div>
+
+        <button id="auth-button" disabled>Authorize Apple Music</button>
+
+        <div id="token-display"></div>
+
+        <div class="hint">
+            <strong>💡 Tip:</strong> You need an active Apple Music subscription to use this feature.
+        </div>
+    </div>
+
+    <script>
+        let musicKitInstance = null;
+
+        // Enable button when developer token is entered
+        const devTokenInput = document.getElementById('developer-token-input');
+        const authButton = document.getElementById('auth-button');
+
+        devTokenInput.addEventListener('input', function() {
+            const token = this.value.trim();
+            authButton.disabled = token.length < 10;
+        });
+
+        document.addEventListener('musickitloaded', async function() {
+            console.log('MusicKit loaded successfully');
+
+            authButton.addEventListener('click', async () => {
+                const developerToken = devTokenInput.value.trim();
+
+                if (!developerToken) {
+                    showError('Please enter a developer token first.');
+                    return;
+                }
+
+                authButton.disabled = true;
+                authButton.textContent = 'Connecting to Apple Music...';
+
+                try {
+                    // Configure MusicKit with the provided developer token
+                    await MusicKit.configure({
+                        developerToken: developerToken,
+                        app: {
+                            name: 'Plylist',
+                            build: '1.0.0'
+                        }
+                    });
+
+                    musicKitInstance = MusicKit.getInstance();
+                    console.log('MusicKit configured successfully');
+
+                    // Request authorization
+                    const result = await musicKitInstance.authorize();
+                    console.log('Authorization result:', result);
+
+                    // Get the user token
+                    const userToken = musicKitInstance.musicUserToken;
+
+                    if (userToken) {
+                        showSuccess(userToken);
+                    } else {
+                        showError('Authorization succeeded but no user token was returned. Please try again.');
+                    }
+
+                } catch (error) {
+                    console.error('Authorization failed:', error);
+                    showError(error.message || 'Authorization failed. Please check your developer token and try again.');
+                } finally {
+                    authButton.disabled = false;
+                    authButton.textContent = 'Authorize Apple Music';
+                }
+            });
+        });
+
+        function showSuccess(userToken) {
+            const display = document.getElementById('token-display');
+            display.style.display = 'block';
+            display.innerHTML = `
+                <div class="success-box">
+                    <h2>✅ Success!</h2>
+                    <p><strong>Your Apple Music User Token:</strong></p>
+                    <div class="token-box" id="user-token">${userToken}</div>
+                    <button class="copy-button" onclick="copyToken()">📋 Copy Token</button>
+                    <p style="margin-top: 15px;">
+                        <strong>Next steps:</strong><br>
+                        Set this as your environment variable:
+                    </p>
+                    <div class="token-box">export APPLE_MUSIC_USER_TOKEN="${userToken}"</div>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            const display = document.getElementById('token-display');
+            display.style.display = 'block';
+            display.innerHTML = `
+                <div class="error-box">
+                    <h2>❌ Error</h2>
+                    <p>${message}</p>
+                    <p style="margin-top: 10px;">
+                        <strong>Common issues:</strong>
+                    </p>
+                    <ul style="margin-left: 20px; margin-top: 5px;">
+                        <li>Invalid developer token</li>
+                        <li>No active Apple Music subscription</li>
+                        <li>Browser blocked the popup window</li>
+                        <li>Network connectivity issues</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function copyToken() {
+            const tokenText = document.getElementById('user-token').textContent;
+            navigator.clipboard.writeText(tokenText).then(() => {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy. Please select and copy manually.');
+            });
+        }
+    </script>
+</body>
+</html>

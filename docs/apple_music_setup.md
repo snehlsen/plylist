@@ -43,30 +43,94 @@ Save the `.p8` file in a secure location. You'll need:
 
 ## Step 5: Obtain User Music Token
 
-User music tokens are required for accessing user-specific data. There are two ways to obtain them:
+User music tokens are required for accessing user-specific data (like your playlists). Here's the complete process:
 
-### Option A: Using MusicKit JS (Recommended for Web Apps)
+### Step 5a: Generate Developer Token
 
-1. Create a simple HTML page with MusicKit JS
-2. Request user authorization
-3. Retrieve the music user token
+First, you need to generate a developer token using your credentials:
 
-Example HTML:
+**Method 1: Using the Helper Script (Easiest)**
+
+```bash
+python scripts/generate_developer_token.py
+```
+
+This will output your developer token. Copy it for the next step.
+
+**Method 2: Generate Manually with Python**
+
+```python
+import jwt
+import time
+
+# Your credentials from previous steps
+team_id = "ABC1234567"
+key_id = "XYZ9876543"
+private_key_path = "/path/to/AuthKey_XYZ9876543.p8"
+
+# Read private key
+with open(private_key_path, "r") as f:
+    private_key = f.read()
+
+# Generate token (valid for 180 days)
+time_now = int(time.time())
+time_expiry = time_now + (180 * 24 * 60 * 60)
+
+headers = {"alg": "ES256", "kid": key_id}
+payload = {"iss": team_id, "iat": time_now, "exp": time_expiry}
+
+developer_token = jwt.encode(payload, private_key, algorithm="ES256", headers=headers)
+print(developer_token)
+```
+
+### Step 5b: Get User Music Token
+
+Now use your developer token to get a user music token via MusicKit JS:
+
+**Method 1: Using the Ready-Made HTML Tool (Easiest)**
+
+1. **Open the HTML file** in a web browser:
+   - File location: `scripts/get_apple_music_user_token.html`
+   - Just double-click it or open it in your browser
+
+2. **Paste your developer token** from Step 5a into the input field
+
+3. **Click "Authorize Apple Music"** and sign in when prompted
+
+4. **Copy the user token** that appears
+
+5. **Save it** as an environment variable (see Step 6 below)
+
+**Method 2: Create Your Own HTML File**
+
+1. **Create an HTML file** (e.g., `get_user_token.html`):
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
+    <title>Apple Music User Token</title>
     <script src="https://js-cdn.music.apple.com/musickit/v3/musickit.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        #token-display { margin-top: 20px; padding: 10px; background: #f0f0f0; }
+        code { background: #e0e0e0; padding: 2px 5px; }
+    </style>
 </head>
 <body>
+    <h1>Get Apple Music User Token</h1>
+    <p>Click the button below to authorize with Apple Music and get your user token.</p>
     <button id="auth-button">Authorize Apple Music</button>
     <div id="token-display"></div>
 
     <script>
+        // REPLACE THIS with your developer token from Step 5a
+        const DEVELOPER_TOKEN = 'YOUR_DEVELOPER_TOKEN_HERE';
+
         document.addEventListener('musickitloaded', async function() {
             await MusicKit.configure({
-                developerToken: 'YOUR_DEVELOPER_TOKEN_HERE',
+                developerToken: DEVELOPER_TOKEN,
                 app: {
                     name: 'Plylist',
                     build: '1.0.0'
@@ -79,10 +143,19 @@ Example HTML:
                 try {
                     await music.authorize();
                     const userToken = music.musicUserToken;
-                    document.getElementById('token-display').innerHTML =
-                        `<p>User Token: <code>${userToken}</code></p>`;
+
+                    document.getElementById('token-display').innerHTML = `
+                        <h2>Success! ✓</h2>
+                        <p><strong>User Token:</strong></p>
+                        <p><code>${userToken}</code></p>
+                        <p>Copy the token above and set it as your APPLE_MUSIC_USER_TOKEN environment variable.</p>
+                    `;
+
                     console.log('User Token:', userToken);
                 } catch (error) {
+                    document.getElementById('token-display').innerHTML = `
+                        <p style="color: red;"><strong>Error:</strong> ${error.message}</p>
+                    `;
                     console.error('Authorization failed:', error);
                 }
             });
@@ -92,9 +165,31 @@ Example HTML:
 </html>
 ```
 
-### Option B: For Testing (Limited Functionality)
+2. **Replace `YOUR_DEVELOPER_TOKEN_HERE`** with the token from Step 5a
 
-For testing without user-specific operations, you can work with catalog operations that don't require a user token (like searching tracks).
+3. **Open the HTML file** in a web browser
+
+4. **Click "Authorize Apple Music"**
+   - You'll be prompted to sign in to Apple Music
+   - You need an active Apple Music subscription
+
+5. **Copy the user token** that appears on the page
+
+6. **Save it** as an environment variable (see Step 7 below)
+
+### Alternative: Skip User Token for Testing
+
+For testing catalog-only operations (like searching tracks), you can skip the user token. However, you **cannot** access your playlists or create playlists without it.
+
+Operations that work without user token:
+- `apple-music search` - Search the Apple Music catalog
+
+Operations that require user token:
+- `apple-music auth` - Test authentication with your account
+- `apple-music playlists` - List your playlists
+- `apple-music sync-to` - Upload playlists to your library
+- `apple-music sync-from` - Download your playlists
+- `apple-music status` - Check sync status
 
 ## Step 6: Install Required Dependencies
 
