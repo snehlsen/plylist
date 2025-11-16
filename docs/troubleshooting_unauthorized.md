@@ -48,26 +48,32 @@ After creating or modifying a MusicKit Identifier:
 
 This is a common issue! Even though you just created it, Apple's backend needs time to activate it across all services.
 
-### Step 4: Test Your Token Directly
+### Step 4: Run Comprehensive Verification
 
-Run this command to test if your developer token works with Apple Music API:
+Run this comprehensive diagnostic tool to identify the exact issue:
 
 ```bash
-python scripts/test_api_direct.py <your-developer-token>
+python scripts/verify_musickit_setup.py <your-developer-token>
 ```
 
 This will:
-- ✅ Test if your token works for catalog access
-- ✅ Show you the exact error from Apple's API
-- ✅ Confirm if it's a token issue or authorization flow issue
+- ✅ Verify token structure and expiration
+- ✅ Test catalog access (public API)
+- ✅ Test user endpoints and identify the specific error type
+- ✅ Provide a clear diagnosis with specific fixes
 
-Expected output if token is valid:
+**Expected output if setup is correct:**
 ```
-✓ SUCCESS: Found track: Billie Jean by Michael Jackson
-✓ Developer token works for catalog access
-✓ Expected 401 Unauthorized (user token missing)
-✓ This means your developer token is VALID
+✓ Token has 3 parts
+✓ Token decoded successfully
+✓ Algorithm is ES256
+✓ Catalog search successful
+✓ Got expected 401 Unauthorized (user endpoints)
+✓ Your MusicKit setup appears to be correct!
 ```
+
+**If you see 403 Forbidden on user endpoints:**
+This means your Private Key or MusicKit Identifier has a configuration issue. See the diagnosis section for specific fixes.
 
 ### Step 5: Try Authorization Again
 
@@ -77,6 +83,66 @@ After waiting 10-15 minutes:
 2. Paste your developer token
 3. Click "Authorize Apple Music"
 4. It should now work!
+
+## Specific Fix: 403 Forbidden on User Endpoints
+
+If the verification tool shows **403 Forbidden** instead of the expected **401 Unauthorized** for user endpoints, this indicates a specific configuration problem:
+
+### What This Means
+
+- ✓ Your developer token structure is valid
+- ✓ Your token works for public catalog searches
+- ✗ Your token is rejected for user-scoped operations
+
+This pattern means your **Private Key** or **MusicKit Identifier** isn't properly configured for user authorization, even though they appear enabled.
+
+### Fix 1: Verify Private Key Configuration
+
+1. Go to: https://developer.apple.com/account/resources/authkeys/list
+2. Find the key with the **Key ID** shown in the verification tool output
+3. Click on it to view details
+4. **Critical check**: Under "Services", verify that **MusicKit** is checked
+5. **Also verify**: The key status is "Active"
+
+**If MusicKit is NOT checked:**
+- You cannot edit an existing key to add services
+- You must create a new key:
+  1. Click "+ Create a key"
+  2. Enter a name (e.g., "Apple Music Key 2")
+  3. **Check the "MusicKit" checkbox**
+  4. Click "Continue" and "Register"
+  5. Download the .p8 file (you can only download once!)
+  6. Note the new Key ID
+  7. Update your environment variable: `APPLE_MUSIC_KEY_ID=<new-key-id>`
+  8. Regenerate developer token: `python scripts/generate_developer_token.py`
+
+### Fix 2: Verify Team ID Match
+
+The Team ID in your token must match the team that owns your MusicKit Identifier:
+
+1. Check the Team ID in your token (shown in verification tool output)
+2. Go to: https://developer.apple.com/account
+3. Verify the Team ID matches under "Membership"
+4. Go to: https://developer.apple.com/account/resources/identifiers/list/musicId
+5. Your MusicKit Identifier should be under the same team
+
+**If Team IDs don't match:** You need to use the correct Team ID when generating your developer token.
+
+### Fix 3: Recreate MusicKit Identifier
+
+Sometimes the MusicKit Identifier appears enabled but isn't fully activated in Apple's systems:
+
+1. Go to: https://developer.apple.com/account/resources/identifiers/list/musicId
+2. Delete your existing MusicKit Identifier (if delete option is available)
+3. Create a new one:
+   - Click "+ Register an identifier"
+   - Select "MusicKit IDs"
+   - Click "Continue"
+   - Description: "Plylist Production" (or any unique name)
+   - Identifier: `com.yourname.plylist.v2` (use a different identifier)
+   - Click "Register"
+4. **Wait 15-20 minutes** for Apple to activate it
+5. Try again (you don't need to regenerate your developer token)
 
 ## Alternative: Recreate MusicKit Identifier
 
