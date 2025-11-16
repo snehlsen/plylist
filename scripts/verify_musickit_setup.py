@@ -105,9 +105,37 @@ def verify_token_structure(token):
     return True
 
 
+def test_official_endpoint(token):
+    """Test Apple's official token validation endpoint"""
+    print_section("STEP 2: Test Official Apple Music Token Endpoint")
+
+    print("Testing /v1/test endpoint (Apple's official validation)...\n")
+
+    try:
+        test_url = "https://api.music.apple.com/v1/test"
+
+        req = urllib.request.Request(test_url)
+        req.add_header("Authorization", f"Bearer {token}")
+
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            print_check(True, "Official test endpoint successful")
+            print(f"    Response: {json.dumps(data, indent=2)}")
+            return True, data
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8')
+        print_check(False, f"HTTP {e.code} error")
+        print(f"    {error_body}")
+        return False, None
+    except Exception as e:
+        print_check(False, f"Request failed: {e}")
+        return False, None
+
+
 def test_catalog_access(token):
     """Test catalog access (public, doesn't need user token)"""
-    print_section("STEP 2: Test Catalog Access (Public API)")
+    print_section("STEP 3: Test Catalog Access (Public API)")
 
     try:
         search_url = "https://api.music.apple.com/v1/catalog/us/search?term=test&types=songs&limit=1"
@@ -120,7 +148,7 @@ def test_catalog_access(token):
 
             if 'results' in data:
                 print_check(True, "Catalog search successful")
-                print(f"    This confirms your developer token is valid")
+                print(f"    This confirms your developer token works for public catalog")
                 return True
             else:
                 print_check(False, "Unexpected response format")
@@ -144,7 +172,7 @@ def test_catalog_access(token):
 
 def test_user_endpoint(token):
     """Test user endpoint (requires user token, but helps diagnose)"""
-    print_section("STEP 3: Test User Endpoint (Requires User Token)")
+    print_section("STEP 4: Test User Endpoint (Requires User Token)")
 
     print("Testing /me/storefront endpoint...")
     print("Note: This SHOULD fail with 401, but the error type tells us important info\n")
@@ -202,7 +230,7 @@ def test_user_endpoint(token):
 
 def test_recent_plays_endpoint(token):
     """Test another user endpoint"""
-    print_section("STEP 4: Test Alternative User Endpoint")
+    print_section("STEP 5: Test Alternative User Endpoint")
 
     print("Testing /me/recent/played endpoint...\n")
 
@@ -231,14 +259,15 @@ def test_recent_plays_endpoint(token):
         return "error"
 
 
-def print_diagnosis(catalog_ok, user_result):
+def print_diagnosis(test_ok, catalog_ok, user_result):
     """Print diagnosis based on test results"""
     print_section("DIAGNOSIS")
 
-    if catalog_ok and user_result == "correct_401":
+    if test_ok and catalog_ok and user_result == "correct_401":
         print("\n🎉 GOOD NEWS: Your MusicKit setup appears to be correct!")
         print("\nYour developer token:")
         print("  ✓ Has valid structure and hasn't expired")
+        print("  ✓ Passes Apple's official validation endpoint")
         print("  ✓ Works for public catalog access")
         print("  ✓ Works for user endpoints (returns expected 401)")
         print("\nNext steps:")
@@ -249,30 +278,34 @@ def print_diagnosis(catalog_ok, user_result):
         print("     - Disable browser extensions")
         print("     - Allow popups and cookies")
 
-    elif catalog_ok and user_result == "wrong_403":
-        print("\n⚠️  PROBLEM IDENTIFIED: MusicKit Configuration Issue")
+    elif test_ok and catalog_ok and user_result == "wrong_403":
+        print("\n⚠️  UNUSUAL SITUATION: Token Valid But User Endpoints Fail")
         print("\nYour developer token:")
         print("  ✓ Has valid structure")
+        print("  ✓ Passes Apple's official /v1/test endpoint")
         print("  ✓ Works for public catalog access")
         print("  ✗ Does NOT work for user endpoints (403 instead of 401)")
-        print("\nThis specific pattern indicates:")
-        print("  ✗ Your Private Key might not have MusicKit properly enabled")
-        print("  ✗ OR your MusicKit Identifier isn't properly activated")
-        print("\n🔧 FIXES TO TRY:")
-        print("\n1. Verify Private Key Configuration:")
-        print("   a. Go to: https://developer.apple.com/account/resources/authkeys/list")
-        print("   b. Find your key (Key ID from token header above)")
-        print("   c. Click on it and verify 'MusicKit' is checked under Services")
-        print("   d. If not checked, you need to create a new key")
-        print("\n2. Recreate MusicKit Identifier:")
-        print("   a. Go to: https://developer.apple.com/account/resources/identifiers/list/musicId")
-        print("   b. Delete your existing identifier")
-        print("   c. Create a new one with a different name")
-        print("   d. Wait 15-20 minutes for propagation")
-        print("   e. Try again (you don't need to regenerate developer token)")
-        print("\n3. Check Team ID:")
-        print("   - Make sure the Team ID in your token matches your Apple Developer Team")
-        print("   - The MusicKit Identifier must be under the same team")
+        print("\nThis is a very unusual pattern. Your token is valid according to Apple,")
+        print("but user-scoped endpoints reject it. This could indicate:")
+        print("\n🔧 POSSIBLE CAUSES:")
+        print("\n1. MusicKit Identifier Issues:")
+        print("   Even though your token is valid, the MusicKit Identifier might not")
+        print("   be properly linked in Apple's authorization system.")
+        print("   - Go to: https://developer.apple.com/account/resources/identifiers/list/musicId")
+        print("   - Delete and recreate your MusicKit Identifier")
+        print("   - Wait 15-20 minutes for full propagation")
+        print("\n2. Account-Specific Restrictions:")
+        print("   Your Apple Developer account might have regional or subscription restrictions")
+        print("   - Verify you have an active Apple Developer Program membership")
+        print("   - Check if there are any alerts in Apple Developer Console")
+        print("\n3. Apple Backend Issue:")
+        print("   This could be a temporary Apple service issue")
+        print("   - Try again in a few hours")
+        print("   - If persists, contact Apple Developer Support")
+        print("\n4. Private Key Service Configuration:")
+        print("   - Go to: https://developer.apple.com/account/resources/authkeys/list")
+        print("   - Find your key and verify 'MusicKit' is explicitly checked")
+        print("   - If uncertain, create a new key with MusicKit enabled")
 
     elif not catalog_ok:
         print("\n❌ CRITICAL PROBLEM: Developer Token Invalid")
@@ -285,7 +318,8 @@ def print_diagnosis(catalog_ok, user_result):
 
     else:
         print("\n❓ UNCLEAR ISSUE")
-        print(f"\nCatalog access: {'OK' if catalog_ok else 'Failed'}")
+        print(f"\nOfficial test: {'OK' if test_ok else 'Failed'}")
+        print(f"Catalog access: {'OK' if catalog_ok else 'Failed'}")
         print(f"User endpoint result: {user_result}")
         print("\nThis is an unusual configuration. Please review the test output above.")
 
@@ -315,6 +349,7 @@ def main():
         print("\n✗ Token structure is invalid. Please regenerate your developer token.")
         return 1
 
+    test_ok, test_data = test_official_endpoint(token)
     catalog_ok = test_catalog_access(token)
     user_result = test_user_endpoint(token)
 
@@ -325,7 +360,7 @@ def main():
             print(f"\n⚠️  Note: Got different result on second user endpoint: {user_result2}")
 
     # Print diagnosis
-    print_diagnosis(catalog_ok, user_result)
+    print_diagnosis(test_ok, catalog_ok, user_result)
 
     print("\n" + "=" * 70)
     return 0
